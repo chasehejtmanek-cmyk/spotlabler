@@ -15,7 +15,7 @@ const SUBMIT = "/.netlify/functions/submit";
 const NDIR = CFG.DIRS.length;
 
 const $ = (s) => document.querySelector(s);
-const state = { user: "", queue: [], idx: 0, dir: 0, cur: null, done: 0, spots: 0, busy: false };
+const state = { user: "", queue: [], idx: 0, dir: 0, cur: null, done: 0, spots: 0, busy: false, doneKeys: new Set() };
 
 // ---- storage ---------------------------------------------------------
 const LS = {
@@ -59,6 +59,12 @@ async function start() {
   catch (e) { toast("Couldn't load the spot queue.", "bad"); return; }
   if (!state.queue.length) { toast("Queue is empty.", "bad"); return; }
 
+  // pull the already-labeled cards so we skip them (shared across everyone)
+  try {
+    const dr = await fetch("/.netlify/functions/done");
+    if (dr.ok) { (await dr.json()).forEach((k) => state.doneKeys.add(k)); }
+  } catch { /* offline / local — no skipping */ }
+
   const p = LS.pos;
   if (p) { setPos(p.i * NDIR + p.d); }
   else { setPos(Math.floor(Math.random() * Math.min(20, state.queue.length)) * NDIR); }
@@ -77,8 +83,18 @@ function setPos(lin) {
 }
 
 // ---- render one directional card ------------------------------------
+function cardDone() {
+  const s = state.queue[state.idx], h = CFG.DIRS[state.dir];
+  return state.doneKeys.has(s.panoid + "|" + h) || state.doneKeys.has(s.panoid + "|x") || state.doneKeys.has(s.panoid + "|*");
+}
+
 function loadView() {
   if (!state.queue.length) return;
+  // skip forward over anything already labeled (by anyone)
+  let guard = 0, max = state.queue.length * NDIR;
+  while (cardDone() && guard++ < max) setPos(posLin() + 1);
+  if (guard >= max) { toast("You've labeled everything in the queue 🎉", "good"); }
+
   state.busy = false; clearBox(); clearPreview();
   const s = state.queue[state.idx]; state.cur = s;
   const heading = CFG.DIRS[state.dir];
@@ -162,7 +178,6 @@ function wireControls() {
   $("#bNo").onclick = () => submitCard(false, false, null);
   $("#bSkip").onclick = () => submitCard(false, true, null);
   $("#bBack").onclick = goBack;
-  $("#bExport").onclick = exportLabels;
   window.addEventListener("resize", fitFrame);
   document.addEventListener("keydown", (e) => {
     if ($("#stage").hidden) return;
@@ -206,6 +221,7 @@ function submitCard(isSpot, isSkip, box) {
     spot: !!isSpot, skip: !!isSkip, boxes, ts: new Date().toISOString(),
   };
   LS.pushLog(rec);
+  state.doneKeys.add(s.panoid + "|" + heading);
   state.done += 1; if (isSpot) state.spots += 1; refreshCounts();
   fetch(SUBMIT, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(rec) }).catch(() => queuePending(rec));
   if (!isSpot) toast(isSkip ? "Skipped" : "No visible spot", "");
@@ -215,10 +231,12 @@ function submitCard(isSpot, isSkip, box) {
 }
 
 function goBack() {
-  if (posLin() <= 0) return;
-  const r = LS.popLog();                 // undo the local record we're going back to fix
-  if (r) { state.done = Math.max(0, state.done - 1); if (r.spot) state.spots = Math.max(0, state.spots - 1); refreshCounts(); }
-  setPos(posLin() - 1);
+  const r = LS.popLog();                 // undo the last record we saved
+  if (!r) return;
+  state.done = Math.max(0, state.done - 1); if (r.spot) state.spots = Math.max(0, state.spots - 1); refreshCounts();
+  if (r.panoid != null) state.doneKeys.delete(r.panoid + "|" + r.heading);   // let it re-show so we can re-label
+  const qi = state.queue.findIndex((q) => q.panoid === r.panoid), di = CFG.DIRS.indexOf(r.heading);
+  if (qi >= 0 && di >= 0) setPos(qi * NDIR + di); else setPos(Math.max(0, posLin() - 1));
   loadView();
 }
 
