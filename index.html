@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Spot or Not — U.R.S.A</title>
+<link rel="preconnect" href="https://streetviewpixels-pa.googleapis.com" />
+<link rel="stylesheet" href="style.css?v=10" />
+</head>
+<body>
+  <!-- name gate -->
+  <div id="gate" class="gate">
+    <div class="gate-card">
+      <h1>SPOT<span>or</span>NOT</h1>
+      <p>Help train the spot-finder. You'll see street views and <b>tap any parkour spot</b> you see — walls, rails, ledges, gaps, anything jumpable. No spot? One tap of a button, next.</p>
+      <label>Your handle (so we know whose calls are whose)</label>
+      <input id="handle" maxlength="24" placeholder="e.g. chase" autocomplete="off" />
+      <button id="start">Start blasting →</button>
+      <div class="gate-hint">Works on phone or desktop. Tap right on the spot; it auto-advances.</div>
+    </div>
+  </div>
+
+  <!-- main -->
+  <header id="bar" hidden>
+    <div class="brand">SPOT<span>·</span>NOT</div>
+    <div class="meta" id="spotMeta">—</div>
+    <div class="counts"><b id="cDone">0</b> labeled · <b id="cSpot">0</b> spots · <span id="who"></span></div>
+    <button id="bExport" class="mini" title="download your labels to send back">⬇ Export</button>
+  </header>
+
+  <main id="stage" hidden>
+    <div class="hint" id="hint">Tap the spot (or drag a box) — it marks it and jumps to the next view · 4 views per location</div>
+    <div class="viewport" id="viewport">
+      <div class="frame" id="frame">
+        <img id="pano" alt="street view" />
+        <div class="overlay" id="overlay"></div>
+      </div>
+      <div class="loading" id="loading">loading…</div>
+    </div>
+
+    <div class="controls">
+      <button class="btn back" id="bBack">↶ Back <kbd>B</kbd></button>
+      <div class="spacer"></div>
+      <button class="btn skip" id="bSkip">Can't tell <kbd>S</kbd></button>
+      <button class="btn no"   id="bNo">No visible spot / obstructed spot <kbd>N</kbd></button>
+    </div>
+    <div class="subhint"><b>Tap</b> any wall, rail, ledge, or gap you could do parkour on. Nothing jumpable, or view blocked → <b>No visible spot</b>.</div>
+  </main>
+
+  <!-- first-run tutorial -->
+  <div id="tut" class="tut" hidden>
+    <div class="tut-card">
+      <h2>How it works</h2>
+      <ol>
+        <li><b>Tap the spot</b> — right on any wall, rail, ledge, or gap you could do parkour on. A square drops on it and you jump to the next view.</li>
+        <li><b>Want a custom size?</b> click and <b>drag</b> to draw a box of any size around the spot. The orange outline previews it; release to place.</li>
+        <li><b>Nothing there, or blocked?</b> hit <b>No visible spot</b> (or press <kbd>N</kbd>).</li>
+        <li>Each location shows <b>4 views</b> (N · E · S · W). Misclicked? <b>Back</b> (<kbd>B</kbd>).</li>
+      </ol>
+      <button id="tutGo">Got it — let's go</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+<script src="app.js?v=12"></script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}   /* author display rules must not override the hidden attribute */
+:root{
+  --bg:#0c0a08; --panel:rgba(36,4,8,0.96); --ink:#f3e9d6; --dim:#b79b74;
+  --gold:#f0c060; --gold2:#c8962e; --line:#5a3a1e; --good:#57d18f; --bad:#e0663a;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+kbd{background:#000a;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;font:12px/1.4 ui-monospace,Menlo,monospace;color:var(--gold);margin-left:6px}
+
+/* gate */
+.gate{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(120% 120% at 50% 0%,#1c0d08 0%,#0c0a08 60%);z-index:40;padding:20px}
+.gate-card{max-width:440px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:30px 28px;box-shadow:0 20px 60px #000a}
+.gate-card h1{font:800 34px/1 "Georgia",serif;letter-spacing:1px;color:var(--gold);margin-bottom:14px}
+.gate-card h1 span{color:var(--dim);font-weight:400;font-size:20px;margin:0 6px;font-style:italic}
+.gate-card p{color:var(--dim);margin-bottom:18px}
+.gate-card p b{color:var(--ink)}
+.gate-card label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin-bottom:6px}
+.gate-card input{width:100%;background:#000a;border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:11px 12px;font-size:16px;margin-bottom:14px}
+.gate-card input:focus{outline:none;border-color:var(--gold2)}
+.gate-card button{width:100%;background:linear-gradient(#f0c060,#c8962e);color:#2a1400;border:none;border-radius:8px;padding:12px;font-size:16px;font-weight:700;cursor:pointer}
+.gate-card button:hover{filter:brightness(1.07)}
+.gate-hint{margin-top:14px;font-size:12px;color:#8a7250;line-height:1.4}
+
+/* header */
+header#bar{display:flex;align-items:center;gap:16px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);height:52px}
+.brand{font:800 18px/1 "Georgia",serif;color:var(--gold);letter-spacing:1px}
+.brand span{color:var(--dim)}
+.meta{flex:1;color:var(--dim);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta b{color:var(--ink)}
+.meta a{color:var(--gold);text-decoration:none}
+.counts{font-size:13px;color:var(--dim);white-space:nowrap}
+.counts b{color:var(--gold);font-size:15px}
+#who{color:var(--ink)}
+.mini{background:#1a0e08;border:1px solid var(--line);color:var(--gold);padding:6px 10px;border-radius:7px;font-size:12px;cursor:pointer;white-space:nowrap}
+.mini:hover{filter:brightness(1.2)}
+
+/* stage */
+main#stage{position:fixed;left:0;right:0;top:52px;bottom:0;display:flex;flex-direction:column}
+.hint{text-align:center;font-size:12px;color:#8a7250;padding:6px}
+.viewport{position:relative;flex:1;overflow:hidden;background:#000;border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+.frame{position:relative;line-height:0}
+.frame img{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none;-webkit-user-drag:none}
+.overlay{position:absolute;inset:0;cursor:crosshair;z-index:2}
+.overlay .box{position:absolute;border:2px solid var(--good);background:rgba(87,209,143,.16);box-shadow:0 0 0 1px #000}
+.overlay .preview{position:absolute;border:2px solid #f0932b;background:rgba(240,147,43,.16);box-shadow:0 0 0 1px #0007;pointer-events:none;border-radius:2px}
+.overlay .box .x{position:absolute;top:-10px;right:-10px;width:20px;height:20px;border-radius:50%;background:var(--bad);color:#fff;font-size:13px;line-height:20px;text-align:center;cursor:pointer;border:1px solid #000}
+.overlay .tmp{position:absolute;border:2px dashed var(--gold);background:rgba(240,192,96,.12)}
+.scroll-btn{display:none}   /* whole 360 shown at once — no panning */
+.loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--dim);font-size:14px;background:#000;z-index:4}
+.loading[hidden]{display:none}
+
+/* controls */
+.controls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:12px 16px}
+.spacer{flex:1}
+.boxnote{font-size:13px;color:var(--dim);margin-right:4px}
+.boxnote.has{color:var(--good)}
+.btn{border:1px solid var(--line);background:#1a0e08;color:var(--ink);padding:11px 16px;border-radius:9px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center}
+.btn:hover{filter:brightness(1.15)}
+.btn.no{border-color:#6a2a1a;color:#f0a58a}
+.btn.yes{background:linear-gradient(#3a7d55,#2c6a44);border-color:#2c6a44;color:#eafff2}
+.btn.skip{opacity:.8}
+.btn.undo{opacity:.9}
+.subhint{text-align:center;font-size:12px;color:#8a7250;padding:0 0 12px}
+.subhint b{color:var(--dim)}
+
+/* tutorial */
+.tut{position:fixed;inset:0;display:grid;place-items:center;background:rgba(6,4,3,.86);backdrop-filter:blur(3px);z-index:45;padding:20px}
+.tut-card{max-width:440px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 26px 22px;box-shadow:0 20px 60px #000a}
+.tut-card h2{color:var(--gold);font:800 22px/1 "Georgia",serif;margin-bottom:16px}
+.tut-card ol{margin:0 0 20px;padding-left:20px;display:flex;flex-direction:column;gap:12px}
+.tut-card li{color:var(--dim);line-height:1.5}
+.tut-card li b{color:var(--ink)}
+.tut-card button{width:100%;background:linear-gradient(#f0c060,#c8962e);color:#2a1400;border:none;border-radius:8px;padding:12px;font-size:16px;font-weight:700;cursor:pointer}
+.tut-card button:hover{filter:brightness(1.07)}
+
+/* toast */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:10px 18px;border-radius:10px;z-index:50;font-size:14px;box-shadow:0 8px 30px #000a}
+.toast[hidden]{display:none}
+.toast.good{border-color:#2c6a44}.toast.bad{border-color:#6a2a1a}
+
+@media (max-width:640px){
+  .subhint,.hint{display:none}
+  .btn{padding:12px 12px;font-size:14px}
+  .btn kbd{display:none}
+  .meta{display:none}
+  .controls{gap:8px;padding:10px}
+  .spacer{display:none}
+  .btn.no{flex:1 1 100%;order:3;justify-content:center}
+  .btn.back{order:1}.btn.skip{order:2}
+}
