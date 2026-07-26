@@ -11,8 +11,10 @@ const CFG = {
   BOX: 0.48,                 // marker square side as fraction of view height
   get VFOV() { return this.FOV * this.H / this.W; }, // 67.5
 };
-const SUBMIT = "/.netlify/functions/submit";
-const NDIR = CFG.DIRS.length;
+// Local dev has no functions — point at the deployed backend so the shared bucket + done-set work here too.
+const API = (location.hostname === "localhost" || location.hostname === "127.0.0.1") ? "https://ursagruntwork.netlify.app" : "";
+const SUBMIT = API + "/.netlify/functions/submit";
+const NDIR = 1;   // one card per spot (the scanner's flagged heading)
 
 const $ = (s) => document.querySelector(s);
 const state = { user: "", queue: [], idx: 0, dir: 0, cur: null, done: 0, spots: 0, busy: false, doneKeys: new Set() };
@@ -61,7 +63,7 @@ async function start() {
 
   // pull the already-labeled cards so we skip them (shared across everyone)
   try {
-    const dr = await fetch("/.netlify/functions/done");
+    const dr = await fetch(API + "/.netlify/functions/done");
     if (dr.ok) { (await dr.json()).forEach((k) => state.doneKeys.add(k)); }
   } catch { /* offline / local — no skipping */ }
 
@@ -69,6 +71,20 @@ async function start() {
   if (p) { setPos(p.i * NDIR + p.d); }
   else { setPos(Math.floor(Math.random() * Math.min(20, state.queue.length)) * NDIR); }
   loadView();
+  setInterval(refreshQueue, 25000);   // the live loop keeps topping up the queue — pull new candidates in
+}
+
+// Append any new candidates the live daemon has added, without disturbing your position.
+async function refreshQueue() {
+  try {
+    const r = await fetch("spots-queue.json?v=" + Date.now());
+    if (!r.ok) return;
+    const fresh = await r.json();
+    const have = new Set(state.queue.map((q) => q.panoid));
+    let added = 0;
+    for (const c of fresh) { if (c.panoid && !have.has(c.panoid)) { state.queue.push(c); have.add(c.panoid); added++; } }
+    if (added) toast(`+${added} fresh candidate${added > 1 ? "s" : ""}`, "good");
+  } catch { /* offline */ }
 }
 
 function refreshCounts() { $("#cDone").textContent = state.done; $("#cSpot").textContent = state.spots; }
@@ -83,8 +99,9 @@ function setPos(lin) {
 }
 
 // ---- render one directional card ------------------------------------
+function cardHeading(s) { return (s && s.heading != null) ? s.heading : 0; }   // one card per spot, at the scanner's flagged direction
 function cardDone() {
-  const s = state.queue[state.idx], h = CFG.DIRS[state.dir];
+  const s = state.queue[state.idx], h = cardHeading(s);
   return state.doneKeys.has(s.panoid + "|" + h) || state.doneKeys.has(s.panoid + "|x") || state.doneKeys.has(s.panoid + "|*");
 }
 
@@ -97,11 +114,11 @@ function loadView() {
 
   state.busy = false; clearBox(); clearPreview();
   const s = state.queue[state.idx]; state.cur = s;
-  const heading = CFG.DIRS[state.dir];
+  const heading = cardHeading(s);
 
   const sv = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${s.lat},${s.lng}`;
   $("#spotMeta").innerHTML =
-    `<b>${esc(s.name || "spot")}</b> · view ${state.dir + 1}/${NDIR} facing ${compass(heading)} · ` +
+    `<b>${esc(s.name || "spot")}</b> · facing ${compass(heading)} · ` +
     `${s.km ?? "?"} km from NYC · <a href="${sv}" target="_blank" rel="noopener">Google ↗</a>`;
 
   const img = $("#pano");
@@ -111,9 +128,8 @@ function loadView() {
   img.onerror = () => { $("#loading").hidden = true; toast("No imagery this way — No visible spot.", "bad"); };
   img.src = viewUrl(s.panoid, heading);
 
-  let nl = posLin() + 1;
-  const ni = Math.floor(nl / NDIR) % state.queue.length, nd = nl % NDIR;
-  const n = state.queue[ni]; if (n) { const im = new Image(); im.src = viewUrl(n.panoid, CFG.DIRS[nd]); }
+  const n = state.queue[(state.idx + 1) % state.queue.length];
+  if (n) { const im = new Image(); im.src = viewUrl(n.panoid, cardHeading(n)); }
 }
 
 // ---- frame fit -------------------------------------------------------
@@ -207,7 +223,7 @@ function clearPreview() { const o = $("#overlay"); if (o) { const el = o.querySe
 // ---- submit / navigation --------------------------------------------
 function submitCard(isSpot, isSkip, box) {
   const s = state.cur; if (!s) return;
-  const heading = CFG.DIRS[state.dir];
+  const heading = cardHeading(s);
   const boxes = box ? [{
     ...box,
     yaw0: +(((heading + (box.x0 - 0.5) * CFG.FOV) % 360 + 360) % 360).toFixed(2),
@@ -235,8 +251,8 @@ function goBack() {
   if (!r) return;
   state.done = Math.max(0, state.done - 1); if (r.spot) state.spots = Math.max(0, state.spots - 1); refreshCounts();
   if (r.panoid != null) state.doneKeys.delete(r.panoid + "|" + r.heading);   // let it re-show so we can re-label
-  const qi = state.queue.findIndex((q) => q.panoid === r.panoid), di = CFG.DIRS.indexOf(r.heading);
-  if (qi >= 0 && di >= 0) setPos(qi * NDIR + di); else setPos(Math.max(0, posLin() - 1));
+  const qi = state.queue.findIndex((q) => q.panoid === r.panoid);
+  setPos(qi >= 0 ? qi : Math.max(0, posLin() - 1));
   loadView();
 }
 
